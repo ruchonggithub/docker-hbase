@@ -1,12 +1,29 @@
-version: "3"
+version: "3.9"
 
+x-common-params: &common-params
+  restart: unless-stopped
+  networks:
+    - local-network
+
+
+
+networks:
+  local-network:
+    name: local-network # 不使用省缺命名，这又外部使用的时候可以直接使用该名称，否则会自动生成一个名称如：“docker-local-db_db-network”
+    driver: bridge
+    external: true  #如果要加入已经存在的网络就打开这个注释
+
+
+# 服务
 services:
+
   namenode:
+    <<: *common-params
     image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
     container_name: namenode
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
-      - ./data/hadoop_namenode:/hadoop/dfs/name
+#      - ./data/hadoop_namenode:/hadoop/dfs/name
     environment:
       - CLUSTER_NAME=test
     env_file:
@@ -15,11 +32,12 @@ services:
       - 50070:50070
 
   datanode:
+    <<: *common-params
     image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
     container_name: datanode
     volumes:
       - hadoop_datanode:/hadoop/dfs/data
-      - ./data/hadoop_datanode:/hadoop/dfs/data
+#      - ./data/hadoop_datanode:/hadoop/dfs/data
     environment:
       SERVICE_PRECONDITION: "namenode:50070"
     env_file:
@@ -28,6 +46,7 @@ services:
       - 50075:50075
 
   resourcemanager:
+    <<: *common-params
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
     container_name: resourcemanager
     environment:
@@ -38,6 +57,7 @@ services:
       - 8088:8088
 
   nodemanager1:
+    <<: *common-params
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop2.7.4-java8
     container_name: nodemanager
     environment:
@@ -48,19 +68,21 @@ services:
       - 8042:8042
 
   historyserver:
+    <<: *common-params
     image: bde2020/hadoop-historyserver:2.0.0-hadoop2.7.4-java8
     container_name: historyserver
     volumes:
       - hadoop_historyserver:/hadoop/yarn/timeline
-      - ./data/hadoop_historyserver:/hadoop/yarn/timeline
+#      - ./data/hadoop_historyserver:/hadoop/yarn/timeline
     environment:
       SERVICE_PRECONDITION: "namenode:50070 datanode:50075 resourcemanager:8088"
     env_file:
       - ./hadoop.env
     ports:
       - 8188:8188
-  
+
   zoo:
+    <<: *common-params
     image: zookeeper:3.4.10
     container_name: zoo
     environment:
@@ -70,6 +92,7 @@ services:
       - 2183:2181
 
   hbase-master:
+    <<: *common-params
     image: bde2020/hbase-master:1.0.0-hbase1.2.6
     container_name: hbase-master
     hostname: hbase-master
@@ -82,6 +105,7 @@ services:
       - 16000:16000     # 新添加
 
   hbase-region:
+    <<: *common-params
     image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
     container_name: hbase-regionserver
     hostname: hbase-regionserver
